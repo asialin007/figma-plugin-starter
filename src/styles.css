@@ -1,0 +1,983 @@
+/**
+ * 批量重命名插件样式
+ * 遵循年轻版设计系统规范
+ *
+ * 核心规则：
+ * ✅ 默认按钮使用黑色
+ * ✅ 容器使用直角（border-radius: 0）
+ * ✅ 无阴影（扁平化设计）
+ * ✅ 使用 --yds-* 变量
+ */
+
+/* ==================== 主容器 ==================== */
+.plugin-container {
+  /* 扁平化设计：无阴影、直角 */
+  background-color: var(--yds-color-neutral-white);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-none);
+  padding: 0;
+  box-shadow: none;
+
+  /* 固定高度布局 */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-height: 690px;
+  height: 690px;
+  overflow: hidden;
+}
+
+/* ==================== 可滚动内容区域 ==================== */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--yds-spacing-24) var(--yds-spacing-16);
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.scrollable-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}
+
+
+/* ==================== 标题 ==================== */
+.plugin-title {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-16);
+  font-weight: var(--yds-font-weight-semibold);
+  color: var(--yds-text-primary);
+  margin-bottom: var(--yds-spacing-16);
+  letter-spacing: -0.3px;
+  text-align: center;
+}
+
+/* ==================== 选项卡切换 ==================== */
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--yds-spacing-12);
+  background-color: var(--yds-color-neutral-gray);
+  border-radius: var(--yds-radius-none);
+  padding: 4px;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: var(--yds-spacing-12) var(--yds-spacing-20);
+  background-color: transparent;
+  color: var(--yds-text-tertiary);
+  border: none;
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-14);
+  font-weight: var(--yds-font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  text-align: center;
+}
+
+.mode-tab:hover {
+  background-color: rgba(27, 27, 27, 0.04);
+  color: var(--yds-text-secondary);
+}
+
+/* 选中状态 - 使用 !important 确保优先级最高 */
+.mode-tab--active {
+  background-color: var(--yds-color-neutral-white) !important;
+  color: var(--yds-text-primary) !important;
+  font-weight: var(--yds-font-weight-semibold) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 选中状态的 hover 不改变样式 */
+.mode-tab--active:hover {
+  background-color: var(--yds-color-neutral-white) !important;
+  color: var(--yds-text-primary) !important;
+}
+
+/* 选中状态的快捷标签样式 */
+.quick-tag--selected {
+  background-color: var(--yds-bg-default-black, #1B1B1B);
+  color: #FFFFFF;
+}
+
+.quick-tag--selected:hover {
+  background-color: var(--yds-bg-default-black, #1B1B1B);
+  color: #FFFFFF;
+}
+
+/* 预览区域复制按钮 */
+.preview-copy-button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--yds-radius-full);
+  color: var(--yds-text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.preview-copy-button:hover {
+  background-color: var(--yds-color-opacity-black-4);
+}
+
+.preview-copy-button:hover svg {
+  color: var(--yds-text-primary);
+}
+
+.preview-copy-button:active {
+  background-color: var(--yds-color-opacity-black-8);
+}
+
+.preview-copy-button svg {
+  width: 14px;
+  height: 14px;
+  color: var(--yds-text-tertiary);
+}
+
+/* 预览区域新名称 - 带复制按钮 */
+.preview-new--with-copy {
+  justify-content: space-between;
+  gap: var(--yds-spacing-8);
+  overflow: visible;
+  min-height: auto;
+  height: auto;
+}
+
+/* 文本内容 */
+.preview-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+/* 预览内容垂直布局 */
+.preview-content--vertical {
+  flex-direction: column;
+  gap: var(--yds-spacing-8);
+  align-items: stretch;
+}
+
+.preview-content--vertical .preview-original,
+.preview-content--vertical .preview-new,
+.preview-content--vertical .preview-placeholder {
+  text-align: left;
+  justify-content: center;
+}
+
+/* ==================== 切图命名表单 ==================== */
+.export-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* 复制切图名称按钮 */
+.copy-export-button {
+  width: 100%;
+  padding: var(--yds-spacing-12) var(--yds-spacing-24);
+  background-color: var(--yds-color-neutral-black);
+  color: var(--yds-color-neutral-white);
+  border: none;
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-15);
+  font-weight: var(--yds-font-weight-medium);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.2s ease;
+}
+
+.copy-export-button:hover {
+  background-color: #3a3a3a;
+}
+
+.copy-export-button:active {
+  background-color: var(--yds-color-neutral-black);
+}
+
+/* ==================== 预览区域 ==================== */
+.preview-section {
+  /* 向上偏移，但不完全抵消，保持适当间距 */
+  margin-top: calc(var(--yds-spacing-12) * -1);
+  margin-bottom: var(--yds-spacing-16);
+  position: sticky;
+  top: 0;
+  z-index: 100; /* 提高层级，确保在所有其他元素之上 */
+  padding: var(--yds-spacing-16);
+
+  /* 让描边拉通到容器边缘 */
+  margin-left: calc(var(--yds-spacing-16) * -1); /* 抵消父容器的 padding (-16px) */
+  margin-right: calc(var(--yds-spacing-16) * -1);
+
+  /* 确保预览区域创建独立的堆叠上下文 */
+  isolation: isolate;
+
+  /* 白色背景直接设置在元素上 */
+  background-color: var(--yds-color-neutral-white);
+}
+
+/* 使用伪元素扩展背景，遮挡滚动时上来的内容 */
+.preview-section::before {
+  content: '';
+  position: absolute;
+  /* 向四周扩展，覆盖滚动容器 padding 和负 margin 区域 */
+  left: calc(var(--yds-spacing-16) * -1);
+  right: calc(var(--yds-spacing-16) * -1);
+  top: calc(var(--yds-spacing-24) * -1);
+  bottom: 0;
+  background-color: var(--yds-color-neutral-white);
+  z-index: -1;
+  display: block;
+  pointer-events: none;
+}
+
+/* 滚动时不再显示底部描边 */
+
+
+.preview-box {
+  background-color: var(--yds-color-neutral-gray);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-none);
+  padding: var(--yds-spacing-12);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.preview-label {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-11);
+  color: var(--yds-text-tertiary);
+  font-weight: var(--yds-font-weight-medium);
+  letter-spacing: 0;
+  padding: 0;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 只有当有"已选中图层"内容时才添加底部间距 */
+.preview-label:has(.preview-count) {
+  margin-bottom: var(--yds-spacing-12);
+}
+
+.preview-count {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-11);
+  color: var(--yds-text-tertiary);
+  font-weight: var(--yds-font-weight-medium);
+}
+
+.preview-count strong {
+  color: var(--yds-text-primary);
+  font-weight: var(--yds-font-weight-medium);
+}
+
+.preview-content {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--yds-spacing-8);
+  min-height: 40px;
+  overflow: hidden;
+}
+
+.preview-original,
+.preview-new,
+.preview-placeholder {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-13);
+  padding: var(--yds-spacing-8) var(--yds-spacing-12);
+  border-radius: var(--yds-radius-sm);
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-original {
+  background-color: var(--yds-color-neutral-white);
+  color: var(--yds-text-tertiary);
+  border: 1px solid var(--yds-border-color);
+}
+
+.preview-new {
+  background-color: var(--yds-color-neutral-white);
+  color: var(--yds-text-primary);
+  font-weight: var(--yds-font-weight-medium);
+  border: 1px solid var(--yds-color-brand-primary);
+}
+
+.preview-placeholder {
+  color: var(--yds-text-disabled);
+}
+
+.preview-arrow {
+  color: var(--yds-text-tertiary);
+  font-size: var(--yds-font-size-14);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ==================== 预览列表（多图层） ==================== */
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--yds-spacing-8);
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  /* 隐藏滚动条 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.preview-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.preview-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--yds-spacing-8);
+  min-height: 40px;
+}
+
+.preview-list-original {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-12);
+  color: var(--yds-text-tertiary);
+  background-color: var(--yds-color-neutral-white);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-sm);
+  padding: var(--yds-spacing-6) var(--yds-spacing-10);
+  flex: 0 0 auto;
+  min-width: 80px;
+  max-width: 120px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-list-arrow {
+  color: var(--yds-text-tertiary);
+  font-size: var(--yds-font-size-14);
+  flex-shrink: 0;
+}
+
+.preview-list-new {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-12);
+  color: var(--yds-text-primary);
+  font-weight: var(--yds-font-weight-medium);
+  background-color: var(--yds-color-neutral-white);
+  border: 1px solid var(--yds-color-brand-primary);
+  border-radius: var(--yds-radius-sm);
+  padding: var(--yds-spacing-6) var(--yds-spacing-10);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--yds-spacing-8);
+  min-width: 0;
+}
+
+/* ==================== 表单组 ==================== */
+.form-group {
+  margin-bottom: var(--yds-spacing-24);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 图层命名中，switch-container 后面的 form-group 需要顶部间距 */
+.form-group--after-switch {
+  margin-top: calc(var(--yds-spacing-16) * -1);
+  margin-bottom: var(--yds-spacing-24);
+}
+
+/* 切图命名中，switch-container 后面的 form-group 需要负边距抵消 */
+.form-group--after-switch--export {
+  margin-top: calc(var(--yds-spacing-16) * -1);
+  margin-bottom: var(--yds-spacing-16);
+}
+
+/* 切图模式下，确保 form-group 内部有足够的上间距 */
+.form-group--after-switch--export > .form-label {
+  margin-top: var(--yds-spacing-8);
+}
+
+/* ==================== 快捷词标签 ==================== */
+.quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--yds-spacing-8);
+  margin-top: var(--yds-spacing-8);
+  margin-bottom: var(--yds-spacing-12);
+}
+
+.quick-tag {
+  padding: var(--yds-spacing-4) var(--yds-spacing-12);
+  background-color: var(--yds-color-neutral-gray);
+  color: var(--yds-text-secondary);
+  border: none;
+  border-radius: var(--yds-radius-sm);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-12);
+  font-weight: var(--yds-font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: none;
+  display: inline-block;
+  outline: none;
+}
+
+/* 未选中状态的 hover 和 active */
+.quick-tag:not(.quick-tag--selected):hover {
+  background-color: #E5E7EB;
+  color: var(--yds-text-primary);
+}
+
+.quick-tag:not(.quick-tag--selected):active {
+  background-color: #D1D5DB;
+}
+
+/* 移除 focus 样式，确保选中状态在失焦后保持 */
+.quick-tag:focus,
+.quick-tag:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 选中状态样式 - 始终保持黑色背景 */
+.quick-tag--selected {
+  background-color: var(--yds-bg-default-black, #1B1B1B);
+  color: #FFFFFF;
+}
+
+/* 选中状态的 hover 和 focus 也保持黑色 */
+.quick-tag--selected:hover,
+.quick-tag--selected:focus,
+.quick-tag--selected:active {
+  background-color: var(--yds-bg-default-black, #1B1B1B);
+  color: #FFFFFF;
+}
+
+/* 内容区域：根据内容自动调整 */
+.form-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  display: block;
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-13);
+  font-weight: var(--yds-font-weight-medium);
+  color: var(--yds-text-secondary);
+  margin-bottom: var(--yds-spacing-8);
+}
+
+/* ==================== 输入框 ==================== */
+/* 直角设计、无阴影、使用 YDS 变量 */
+.textbox-custom {
+  width: 100%;
+  padding: var(--yds-spacing-12) var(--yds-spacing-12);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-14);
+  color: var(--yds-text-primary);
+  background-color: var(--yds-color-neutral-white);
+  box-sizing: border-box;
+  box-shadow: none;
+  transition: border-color 0.2s ease;
+  /* 增加高度：使用更大的垂直内边距 */
+  min-height: 44px;  /* 与年轻版设计系统的按钮高度一致 */
+  line-height: 20px;  /* 行高 */
+}
+
+.textbox-custom:focus {
+  outline: none;
+  border-color: var(--yds-border-focus);
+  background-color: var(--yds-color-neutral-white);
+}
+
+.textbox-custom::placeholder {
+  color: var(--yds-text-disabled);
+}
+
+/* ==================== 输入框 + 清空按钮 ==================== */
+.input-with-clear {
+  position: relative;
+  width: 100%;
+}
+
+.input-with-clear > div {
+  width: 100%;
+}
+
+/* 复制按钮 */
+.copy-button {
+  position: absolute;
+  right: 44px; /* 在清空按钮左侧 */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--yds-radius-full);
+  color: var(--yds-text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+  z-index: 50; /* 在预览区域之下，但在输入框之上 */
+  /* 移除所有 focus 样式 */
+  outline: none !important;
+}
+
+.copy-button::-moz-focus-inner {
+  border: 0;
+}
+
+.copy-button svg {
+  width: 14px;
+  height: 14px;
+  transition: color 0.2s ease;
+}
+
+.copy-button:hover {
+  background-color: var(--yds-color-opacity-black-4);
+}
+
+.copy-button:hover svg {
+  color: var(--yds-text-primary);
+}
+
+.copy-button:active {
+  background-color: var(--yds-color-opacity-black-8);
+}
+
+/* 移除复制按钮的所有 focus 样式，避免选中效果 */
+.copy-button:focus,
+.copy-button:focus-visible,
+.copy-button:focus:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 清空按钮 - 使用年轻版设计系统删除图标 */
+.clear-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--yds-radius-full);
+  color: var(--yds-text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+  z-index: 50; /* 在预览区域之下，但在输入框之上 */
+}
+
+.clear-button svg {
+  width: 14px;
+  height: 14px;
+  transition: color 0.2s ease;
+}
+
+.clear-button:hover {
+  background-color: var(--yds-color-opacity-black-4);
+}
+
+.clear-button:hover svg {
+  color: var(--yds-text-primary);
+}
+
+.clear-button:active {
+  background-color: var(--yds-color-opacity-black-8);
+}
+
+/* ==================== 覆盖 @create-figma-plugin/ui 默认样式 ==================== */
+/* 使用年轻版设计系统的输入框样式 */
+
+/* 覆盖 Textbox 组件的默认样式 */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+textarea,
+/* @create-figma-plugin/ui 的 Textbox 生成的 input */
+.input-with-clear input,
+.input-with-clear textarea {
+  border-radius: var(--yds-radius-none) !important;
+  border: 1px solid var(--yds-border-color) !important;
+  font-family: var(--yds-font-family-base) !important;
+  font-size: var(--yds-font-size-14) !important;
+  color: var(--yds-text-primary) !important;
+  background-color: var(--yds-color-neutral-white) !important;
+  box-shadow: none !important;
+  padding: var(--yds-spacing-12) var(--yds-spacing-12) !important;
+  transition: border-color 0.2s ease !important;
+  /* 确保右侧有空间给复制和清空按钮 */
+  padding-right: 76px !important; /* 12px 左间距 + 24px 复制按钮 + 8px 间距 + 24px 清空按钮 + 8px 右间距 */
+  /* 增加高度 */
+  min-height: 44px !important;
+  line-height: 20px !important;
+  box-sizing: border-box !important;
+  /* 确保输入框宽度填满容器 */
+  width: 100% !important;
+  /* 确保输入框不会遮挡清空按钮 */
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+.input-with-clear input:focus,
+.input-with-clear textarea:focus {
+  outline: none !important;
+  /* 聚焦时使用黑色边框 */
+  border-color: var(--yds-color-neutral-black) !important;
+  background-color: var(--yds-color-neutral-white) !important;
+  box-shadow: none !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.input-with-clear input::placeholder,
+.input-with-clear textarea::placeholder {
+  color: var(--yds-text-disabled) !important;
+  opacity: 1 !important;
+}
+
+/* 确保输入框容器样式正确 */
+.input-with-clear > div:first-child {
+  width: 100%;
+}
+
+.input-with-clear > div:first-child > * {
+  width: 100% !important;
+}
+
+/* ==================== 复选框容器 ==================== */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  padding: var(--yds-spacing-12);
+  background-color: var(--yds-color-neutral-gray);
+  border-radius: var(--yds-radius-none);
+  margin-bottom: var(--yds-spacing-16);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.checkbox-container:hover {
+  background-color: var(--yds-color-opacity-black-4);
+}
+
+.checkbox-text {
+  margin-left: var(--yds-spacing-8);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-14);
+  font-weight: var(--yds-font-weight-medium);
+  color: var(--yds-text-primary);
+}
+
+/* ==================== 开关容器 ==================== */
+.switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--yds-spacing-8) var(--yds-spacing-12);
+  background-color: var(--yds-color-neutral-gray);
+  border-radius: var(--yds-radius-none);
+  margin-bottom: var(--yds-spacing-16);
+}
+
+.switch-label {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-14);
+  font-weight: var(--yds-font-weight-medium);
+  color: var(--yds-text-secondary);
+  flex: 1;
+}
+
+/* ==================== 年轻版设计系统开关组件 ==================== */
+.yds-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(27, 27, 27, 0.16);
+  border: 2px solid #ff0000 !important;  /* 调试用红色边框 */
+  border-radius: 72px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 46px;
+  height: 28px;
+  min-width: 46px;
+  min-height: 28px;
+}
+
+/* 中尺寸 */
+.yds-switch--medium {
+  width: 46px !important;
+  height: 28px !important;
+  border-radius: 48px !important;
+}
+
+/* 选中状态 */
+.yds-switch--checked {
+  background-color: var(--yds-bg-brand-default, #FF77E7) !important;
+}
+
+/* 开关圆点 */
+.yds-switch__dot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #FFFFFF !important;
+  border: 1px solid #000 !important;  /* 调试用黑色边框 */
+  border-radius: 50%;
+  transition: transform 0.2s ease, left 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  width: 20px !important;
+  height: 20px !important;
+  left: 4px !important;
+}
+
+.yds-switch--checked .yds-switch__dot {
+  left: 22px !important;
+}
+
+/* Hover 状态 */
+.yds-switch:hover {
+  background-color: rgba(27, 27, 27, 0.24) !important;
+}
+
+.yds-switch--checked:hover {
+  background-color: #FF88E9 !important;
+}
+
+/* ==================== 按钮 ==================== */
+
+/* 主按钮：黑色、直角、无阴影 */
+.button-primary {
+  padding: var(--yds-spacing-12) var(--yds-spacing-24);
+  background-color: var(--yds-color-neutral-black);
+  color: var(--yds-color-neutral-white);
+  border: none;
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-15);
+  font-weight: var(--yds-font-weight-medium);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.2s ease;
+}
+
+.button-primary:hover {
+  background-color: #3a3a3a;
+}
+
+.button-primary:active {
+  background-color: var(--yds-color-neutral-black);
+}
+
+/* 次要按钮：白色、直角、有边框 */
+.button-secondary {
+  padding: var(--yds-spacing-12) var(--yds-spacing-24);
+  background-color: var(--yds-color-neutral-white);
+  color: var(--yds-text-primary);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-15);
+  font-weight: var(--yds-font-weight-medium);
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.button-secondary:hover {
+  background-color: var(--yds-color-neutral-gray);
+  border-color: var(--yds-border-color);
+}
+
+/* ==================== 分隔线 ==================== */
+.divider {
+  height: 1px;
+  background-color: var(--yds-border-color);
+  margin: 0;
+}
+
+/* ==================== 按钮组 ==================== */
+.button-group {
+  display: flex;
+  flex-direction: row;
+  gap: var(--yds-spacing-8);
+  flex-shrink: 0; /* 不收缩，确保按钮组完整显示 */
+  padding: var(--yds-spacing-16);
+  background-color: var(--yds-color-neutral-white);
+}
+
+/* 按钮水平排列时，平分宽度 */
+.button-group button {
+  flex: 1;
+}
+
+/* ==================== 版权信息 ==================== */
+.copyright-section {
+  padding: var(--yds-spacing-8) var(--yds-spacing-16);
+  text-align: center;
+  border-top: none;
+  flex-shrink: 0;
+  background-color: var(--yds-color-neutral-white);
+}
+
+.copyright-text {
+  font-family: var(--yds-font-family-base);
+  font-size: 11px;
+  color: var(--yds-text-tertiary);
+  line-height: 1.5;
+}
+
+.copyright-link {
+  color: var(--yds-text-utils-03-default, #467FEB);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copyright-link:hover {
+  text-decoration: underline;
+  color: var(--yds-text-utils-03-default, #467FEB);
+}
+
+/* ==================== 信息提示 ==================== */
+.info-text {
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-12);
+  color: var(--yds-text-tertiary);
+  text-align: center;
+  margin-top: var(--yds-spacing-12);
+  padding: var(--yds-spacing-8);
+  background-color: var(--yds-color-neutral-gray);
+  border-radius: var(--yds-radius-none);
+}
+
+/* ==================== 选中图层计数 ==================== */
+.selection-count {
+  display: inline-block;
+  padding: var(--yds-spacing-4) var(--yds-spacing-12);
+  background-color: var(--yds-color-opacity-black-8);
+  border-radius: var(--yds-radius-none);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-12);
+  font-weight: var(--yds-font-weight-medium);
+  color: var(--yds-text-primary);
+  margin-bottom: var(--yds-spacing-16);
+}
+
+/* ==================== Toast 提示 ==================== */
+.toast {
+  position: fixed;
+  bottom: 180px;  /* 从 80px 改为 180px，上移 100px */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--yds-spacing-8);
+  padding: var(--yds-spacing-12) var(--yds-spacing-16);
+  border-radius: var(--yds-radius-sm);
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-14);
+  font-weight: var(--yds-font-weight-medium);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: toast-slide-up 0.3s ease-out;
+}
+
+/* Toast 成功状态 */
+.toast--success {
+  background-color: var(--yds-bg-positive-default, #2AA764);
+  color: var(--yds-color-neutral-white);
+}
+
+.toast--success svg {
+  flex-shrink: 0;
+  color: var(--yds-color-neutral-white);
+}
+
+.toast--success span {
+  color: var(--yds-color-neutral-white);
+}
+
+/* Toast 错误状态 */
+.toast--error {
+  background-color: var(--yds-bg-danger-default, #E93E3E);
+  color: var(--yds-color-neutral-white);
+}
+
+.toast--error span {
+  color: var(--yds-color-neutral-white);
+}
+
+@keyframes toast-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ==================== 覆盖 @create-figma-plugin/ui 默认样式 ==================== */
+/* 复选框样式 - 使用年轻版设计系统 */
+input[type="checkbox"] {
+  border-radius: var(--yds-radius-sm) !important;
+}

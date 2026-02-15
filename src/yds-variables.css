@@ -1,0 +1,66 @@
+/**
+ * 年轻版设计系统变量 (Young Design System)
+ * 用于 Figma 插件
+ *
+ * 核心规则：
+ * 1. 默认按钮使用黑色
+ * 2. 容器使用直角（border-radius: 0）
+ * 3. 无阴影（扁平化设计）
+ * 4. 必须使用 --yds-* 变量
+ */
+
+:root {
+  /* ==================== 品牌色 Brand ==================== */
+  --yds-color-brand-primary: #ff77e7;
+  --yds-color-brand-secondary: #fff2ff;
+  --yds-color-brand-hover: #f74ad9;
+  --yds-color-brand-active: #e52ec5;
+
+  /* ==================== 中性色 Neutral ==================== */
+  --yds-color-neutral-black: #1b1b1b;
+  --yds-color-neutral-white: #ffffff;
+  --yds-color-neutral-gray: #f4f5f7;
+
+  /* ==================== 透明度颜色 Opacity ==================== */
+  --yds-color-opacity-black-4: rgba(27, 27, 27, 0.04);
+  --yds-color-opacity-black-8: rgba(27, 27, 27, 0.08);
+  --yds-color-opacity-black-16: rgba(27, 27, 27, 0.16);
+  --yds-color-opacity-black-24: rgba(27, 27, 27, 0.24);
+
+  /* ==================== 字体 Typography ==================== */
+  --yds-font-family-base: PingFang SC, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+  --yds-font-size-11: 11px;
+  --yds-font-size-12: 12px;
+  --yds-font-size-13: 13px;
+  --yds-font-size-14: 14px;
+  --yds-font-size-15: 15px;
+  --yds-font-size-16: 16px;
+  --yds-font-weight-regular: 400;
+  --yds-font-weight-medium: 500;
+  --yds-font-weight-semibold: 600;
+
+  /* ==================== 间距 Spacing ==================== */
+  --yds-spacing-4: 4px;
+  --yds-spacing-8: 8px;
+  --yds-spacing-12: 12px;
+  --yds-spacing-16: 16px;
+  --yds-spacing-20: 20px;
+  --yds-spacing-24: 24px;
+  --yds-spacing-32: 32px;
+
+  /* ==================== 圆角 Border Radius ==================== */
+  --yds-radius-none: 0px;
+  --yds-radius-sm: 2px;
+  --yds-radius-md: 4px;
+  --yds-radius-lg: 8px;
+
+  /* ==================== 文字颜色 Text ==================== */
+  --yds-text-primary: #1b1b1b;
+  --yds-text-secondary: #4e4f54;
+  --yds-text-tertiary: #7e828c;
+  --yds-text-disabled: #b9bbbf;
+
+  /* ==================== 边框颜色 Border ==================== */
+  --yds-border-color: #e2e8f0;
+  --yds-border-focus: #ff77e7;
+}
