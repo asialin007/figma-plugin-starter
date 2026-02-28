@@ -90,6 +90,7 @@
   transition: all 0.2s ease;
   box-shadow: none;
   text-align: center;
+  white-space: nowrap;
 }
 
 .mode-tab:hover {
@@ -192,7 +193,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--yds-spacing-4);
+  gap: var(--yds-spacing-8);
   animation: dropdown-expand 0.2s ease-out;
   transform-origin: top right;
 }
@@ -256,6 +257,311 @@
 
 .quick-tag--selected:hover {
   background-color: var(--yds-bg-default-black, #1B1B1B);
+  color: #FFFFFF;
+}
+
+/* ==================== 主题选择器 ==================== */
+.theme-selector {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.theme-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--yds-spacing-8);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--yds-radius-none);
+  color: var(--yds-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.theme-button:hover,
+.theme-button--open {
+  color: var(--yds-text-primary);
+  background-color: var(--yds-color-neutral-gray);
+}
+
+.theme-button .theme-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.theme-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: var(--yds-color-neutral-black);
+  color: var(--yds-color-neutral-white);
+  font-size: 12px;
+  font-weight: normal;
+  white-space: nowrap;
+  border-radius: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.theme-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--yds-color-neutral-black);
+}
+
+.theme-button:hover .theme-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--yds-spacing-4);
+  padding: var(--yds-spacing-8);
+  background-color: var(--yds-color-neutral-white);
+  border: 1px solid var(--yds-border-color);
+  border-radius: var(--yds-radius-none);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--yds-spacing-8);
+  animation: dropdown-expand 0.2s ease-out;
+  transform-origin: top right;
+}
+
+.theme-dropdown--closing {
+  animation: dropdown-collapse 0.15s ease-in forwards;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--yds-spacing-8);
+  width: 100%;
+  padding: var(--yds-spacing-10) var(--yds-spacing-12);
+  background-color: transparent;
+  border: none;
+  font-family: var(--yds-font-family-base);
+  font-size: var(--yds-font-size-13);
+  font-weight: var(--yds-font-weight-medium);
+  color: var(--yds-text-tertiary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.theme-option__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.theme-option:hover {
+  color: var(--yds-text-brand-default, #E52EC5);
+}
+
+.theme-option--selected {
+  color: var(--yds-text-primary);
+  background-color: transparent;
+}
+
+/* ==================== 深色模式变量覆盖 ==================== */
+[data-theme="dark"] {
+  /* 背景色反转 */
+  --yds-color-neutral-white: #1E1E1E;
+  --yds-color-neutral-black: #FFFFFF;
+  --yds-color-neutral-gray: #2A2A2A;
+
+  /* 文本色 */
+  --yds-text-primary: #FFFFFF;
+  --yds-text-secondary: #B3B3B3;
+  --yds-text-tertiary: #808080;
+  --yds-text-disabled: #4D4D4D;
+
+  /* 边框色 */
+  --yds-border-color: #3A3A3A;
+  --yds-border-focus: #FFFFFF;
+
+  /* 背景色 */
+  --yds-bg-default-black: #FFFFFF;
+  --yds-bg-brand-default: #FF77E7;
+
+  /* 透明度色 */
+  --yds-color-opacity-black-4: rgba(255, 255, 255, 0.04);
+  --yds-color-opacity-black-8: rgba(255, 255, 255, 0.08);
+
+  /* 品牌色保持不变 */
+}
+
+/* 深色模式下容器背景 */
+[data-theme="dark"] .plugin-container {
+  background-color: #1E1E1E;
+  border-color: #3A3A3A;
+}
+
+[data-theme="dark"] .preview-section {
+  background-color: #1E1E1E;
+}
+
+[data-theme="dark"] .preview-box {
+  background-color: #2A2A2A;
+}
+
+[data-theme="dark"] .mode-tabs {
+  background-color: #2A2A2A;
+}
+
+[data-theme="dark"] .mode-tab--active {
+  background-color: #1E1E1E !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .language-dropdown,
+[data-theme="dark"] .theme-dropdown {
+  background-color: #2A2A2A;
+  border-color: #3A3A3A;
+}
+
+[data-theme="dark"] .preview-original,
+[data-theme="dark"] .preview-list-original {
+  background-color: #2A2A2A;
+  border-color: #3A3A3A;
+  color: #B3B3B3;
+}
+
+[data-theme="dark"] .preview-new,
+[data-theme="dark"] .preview-list-new {
+  background-color: #2A2A2A;
+  border-color: #FF77E7;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .switch-container {
+  background-color: #2A2A2A;
+}
+
+/* 深色模式下开关样式 - 使用更清晰的背景色 */
+[data-theme="dark"] {
+  --switch-bg-unchecked: rgba(255, 255, 255, 0.32);
+}
+
+[data-theme="dark"] .switch:hover {
+  --switch-bg-unchecked: rgba(255, 255, 255, 0.40);
+}
+
+/* 深色模式下选中状态的开关保持品牌色 */
+/* 注意：选中状态的背景色通过内联样式设置，这里不需要覆盖 */
+
+[data-theme="dark"] .button-primary {
+  background-color: var(--yds-bg-brand-default, #FF77E7);
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .button-primary:hover {
+  background-color: #FF88E9;
+}
+
+[data-theme="dark"] .button-secondary {
+  background-color: #2A2A2A;
+  color: #FFFFFF;
+  border-color: #3A3A3A;
+}
+
+[data-theme="dark"] .button-secondary:hover {
+  background-color: #3A3A3A;
+}
+
+[data-theme="dark"] .textbox-custom,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] textarea {
+  background-color: #2A2A2A !important;
+  border-color: #3A3A3A !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .textbox-custom:focus,
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="number"]:focus,
+[data-theme="dark"] input[type="search"]:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .quick-tag {
+  background-color: #2A2A2A;
+  color: #B3B3B3;
+}
+
+[data-theme="dark"] .quick-tag:not(.quick-tag--selected):hover {
+  background-color: #3A3A3A;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .quick-tag--selected {
+  background-color: var(--yds-bg-brand-default02, #FF77E7);
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .quick-tag--selected:hover,
+[data-theme="dark"] .quick-tag--selected:focus,
+[data-theme="dark"] .quick-tag--selected:active {
+  background-color: var(--yds-bg-brand-default02, #FF77E7);
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .copyright-section {
+  background-color: #1E1E1E;
+}
+
+[data-theme="dark"] .button-group {
+  background-color: #1E1E1E;
+}
+
+[data-theme="dark"] .language-tooltip,
+[data-theme="dark"] .theme-tooltip {
+  background-color: #FFFFFF;
+  color: #1E1E1E;
+}
+
+[data-theme="dark"] .language-tooltip::after,
+[data-theme="dark"] .theme-tooltip::after {
+  border-top-color: #FFFFFF;
+}
+
+/* 深色模式下 toast 保持白色文字和图标 */
+[data-theme="dark"] .toast--success,
+[data-theme="dark"] .toast--error {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .toast--success svg,
+[data-theme="dark"] .toast--error svg {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .toast--success span,
+[data-theme="dark"] .toast--error span {
   color: #FFFFFF;
 }
 
@@ -922,6 +1228,13 @@ textarea::placeholder,
   min-height: 28px;
 }
 
+/* 小尺寸 */
+.yds-switch--small {
+  width: 38px;
+  height: 24px;
+  border-radius: 24px;
+}
+
 /* 中尺寸 */
 .yds-switch--medium {
   width: 46px !important;
@@ -932,6 +1245,12 @@ textarea::placeholder,
 /* 选中状态 */
 .yds-switch--checked {
   background-color: var(--yds-bg-brand-default, #FF77E7) !important;
+}
+
+/* 禁用状态 */
+.yds-switch--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 开关圆点 */

@@ -10,6 +10,9 @@ import styles from './styles.css'
 import { RenameOptions, ExportOptions } from './types'
 import { Locale, getTranslation, LOCALE_CONFIGS, PLACEHOLDERS } from './i18n'
 
+// 主题类型
+type Theme = 'light' | 'dark' | 'auto'
+
 function Plugin() {
   // 语言状态
   const [locale, setLocale] = useState<Locale>('zh-CN')
@@ -17,12 +20,45 @@ function Plugin() {
   const [isDropdownClosing, setIsDropdownClosing] = useState(false)
   const t = useMemo(() => getTranslation(locale), [locale])
 
-  // 关闭下拉菜单（带动画）
+  // 主题状态
+  const [theme, setTheme] = useState<Theme>('light')
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
+  const [isThemeDropdownClosing, setIsThemeDropdownClosing] = useState(false)
+  const [systemIsDark, setSystemIsDark] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+
+  // 计算实际主题（auto 时根据系统判断）
+  const getActualTheme = useCallback((): 'light' | 'dark' => {
+    if (theme === 'auto') {
+      return systemIsDark ? 'dark' : 'light'
+    }
+    return theme
+  }, [theme, systemIsDark])
+
+  // 获取当前主题的显示名称
+  const getThemeDisplayName = useCallback((): string => {
+    const actualTheme = getActualTheme()
+    if (theme === 'light') return t.theme.light
+    if (theme === 'dark') return t.theme.dark
+    return t.theme.auto
+  }, [theme, getActualTheme, t.theme])
+
+  // 关闭语言下拉菜单（带动画）
   const closeDropdown = () => {
     setIsDropdownClosing(true)
     setTimeout(() => {
       setIsDropdownOpen(false)
       setIsDropdownClosing(false)
+    }, 150)
+  }
+
+  // 关闭主题下拉菜单（带动画）
+  const closeThemeDropdown = () => {
+    setIsThemeDropdownClosing(true)
+    setTimeout(() => {
+      setIsThemeDropdownOpen(false)
+      setIsThemeDropdownClosing(false)
     }, 150)
   }
 
@@ -511,6 +547,27 @@ function Plugin() {
     }
   }, [])
 
+  // 主题切换时更新 CSS 变量
+  useEffect(() => {
+    const actualTheme = getActualTheme()
+    document.documentElement.setAttribute('data-theme', actualTheme)
+  }, [theme, getActualTheme])
+
+  // 监听系统主题变化
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      setSystemIsDark(e.matches)
+      // 如果是 auto 模式，更新 data-theme
+      if (theme === 'auto') {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme])
+
   // 点击外部关闭语言下拉菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -527,6 +584,23 @@ function Plugin() {
       }
     }
   }, [isDropdownOpen])
+
+  // 点击外部关闭主题下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest(`.${styles['theme-selector']}`)) {
+        closeThemeDropdown()
+      }
+    }
+
+    if (isThemeDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => {
+        document.removeEventListener('click', handleClickOutside)
+      }
+    }
+  }, [isThemeDropdownOpen])
 
   return (
     <div class={styles['plugin-container']}>
@@ -552,6 +626,76 @@ function Plugin() {
               >
                 {t.tabs.slice}
               </button>
+            </div>
+
+            {/* 主题选择器 */}
+            <div class={styles['theme-selector']}>
+              <button
+                class={`${styles['theme-button']} ${isThemeDropdownOpen ? styles['theme-button--open'] : ''}`}
+                onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+                type="button"
+              >
+                {/* 动态图标：浅色模式显示太阳，深色模式显示月亮 */}
+                {getActualTheme() === 'light' ? (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class={styles['theme-icon']}>
+                    <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                    <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class={styles['theme-icon']}>
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+                  </svg>
+                )}
+                <span class={styles['theme-tooltip']}>{getThemeDisplayName()}</span>
+              </button>
+              {isThemeDropdownOpen && (
+                <div class={`${styles['theme-dropdown']} ${isThemeDropdownClosing ? styles['theme-dropdown--closing'] : ''}`}>
+                  {/* 浅色模式 - 太阳图标 */}
+                  <button
+                    class={`${styles['theme-option']} ${theme === 'light' ? styles['theme-option--selected'] : ''}`}
+                    onClick={() => {
+                      setTheme('light')
+                      closeThemeDropdown()
+                    }}
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class={styles['theme-option__icon']}>
+                      <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    {t.theme.light}
+                  </button>
+                  {/* 深色模式 - 月亮图标 */}
+                  <button
+                    class={`${styles['theme-option']} ${theme === 'dark' ? styles['theme-option--selected'] : ''}`}
+                    onClick={() => {
+                      setTheme('dark')
+                      closeThemeDropdown()
+                    }}
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class={styles['theme-option__icon']}>
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+                    </svg>
+                    {t.theme.dark}
+                  </button>
+                  {/* 跟随系统 - 电脑图标 */}
+                  <button
+                    class={`${styles['theme-option']} ${theme === 'auto' ? styles['theme-option--selected'] : ''}`}
+                    onClick={() => {
+                      setTheme('auto')
+                      closeThemeDropdown()
+                    }}
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class={styles['theme-option__icon']}>
+                      <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                      <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    {t.theme.auto}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 语言选择器 */}
@@ -800,16 +944,18 @@ function Plugin() {
         <div class={styles['switch-container']}>
           <span class={styles['switch-label']}>{t.labels.prefix}</span>
           <div
+            class="switch"
             style={{
-              width: '36px',
-              height: '22px',
-              backgroundColor: showPrefix ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-              borderRadius: '48px',
-              position: 'relative',
+              width: '38px',
+              height: '24px',
+              borderRadius: '24px',
+              backgroundColor: showPrefix
+                ? 'var(--yds-bg-brand-default, #FF77E7)'
+                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
+              opacity: selectionCount === 0 ? 0.5 : 1,
               cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-              flexShrink: 0,
-              transition: 'background-color 0.2s ease',
-              opacity: selectionCount === 0 ? 0.5 : 1
+              position: 'relative',
+              transition: 'background-color 0.2s ease'
             }}
             onClick={() => {
               if (selectionCount === 0) {
@@ -831,17 +977,18 @@ function Plugin() {
             }}
           >
             <span
+              class="switch-dot"
               style={{
                 position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#FFFFFF',
+                top: '3px',
+                left: '3px',
+                width: '18px',
+                height: '18px',
                 borderRadius: '50%',
-                left: showPrefix ? '17px' : '3px',
-                transition: 'left 0.2s ease',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.2s ease',
+                transform: showPrefix ? 'translateX(14px)' : 'translateX(0)'
               }}
             />
           </div>
@@ -918,16 +1065,18 @@ function Plugin() {
         <div class={styles['switch-container']}>
           <span class={styles['switch-label']}>{t.labels.suffix}</span>
           <div
+            class="switch"
             style={{
-              width: '36px',
-              height: '22px',
-              backgroundColor: showSuffix ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-              borderRadius: '48px',
-              position: 'relative',
+              width: '38px',
+              height: '24px',
+              borderRadius: '24px',
+              backgroundColor: showSuffix
+                ? 'var(--yds-bg-brand-default, #FF77E7)'
+                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
+              opacity: selectionCount === 0 ? 0.5 : 1,
               cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-              flexShrink: 0,
-              transition: 'background-color 0.2s ease',
-              opacity: selectionCount === 0 ? 0.5 : 1
+              position: 'relative',
+              transition: 'background-color 0.2s ease'
             }}
             onClick={() => {
               if (selectionCount === 0) {
@@ -949,17 +1098,18 @@ function Plugin() {
             }}
           >
             <span
+              class="switch-dot"
               style={{
                 position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#FFFFFF',
+                top: '3px',
+                left: '3px',
+                width: '18px',
+                height: '18px',
                 borderRadius: '50%',
-                left: showSuffix ? '17px' : '3px',
-                transition: 'left 0.2s ease',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.2s ease',
+                transform: showSuffix ? 'translateX(14px)' : 'translateX(0)'
               }}
             />
           </div>
@@ -1040,14 +1190,16 @@ function Plugin() {
         <div class={styles['switch-container']}>
           <span class={styles['switch-label']}>{t.switches.addStartNumber}</span>
           <div
+            class="switch"
             style={{
-              width: '36px',
-              height: '22px',
-              backgroundColor: addNumber ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-              borderRadius: '48px',
-              position: 'relative',
+              width: '38px',
+              height: '24px',
+              borderRadius: '24px',
+              backgroundColor: addNumber
+                ? 'var(--yds-bg-brand-default, #FF77E7)'
+                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
               cursor: 'pointer',
-              flexShrink: 0,
+              position: 'relative',
               transition: 'background-color 0.2s ease'
             }}
             onClick={() => {
@@ -1066,17 +1218,18 @@ function Plugin() {
             }}
           >
             <span
+              class="switch-dot"
               style={{
                 position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#FFFFFF',
+                top: '3px',
+                left: '3px',
+                width: '18px',
+                height: '18px',
                 borderRadius: '50%',
-                left: addNumber ? '17px' : '3px',
-                transition: 'left 0.2s ease',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.2s ease',
+                transform: addNumber ? 'translateX(14px)' : 'translateX(0)'
               }}
             />
           </div>
@@ -1236,14 +1389,16 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.stateOptional}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: showState ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: showState
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
                   cursor: 'pointer',
-                  flexShrink: 0,
+                  position: 'relative',
                   transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
@@ -1260,17 +1415,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: showState ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: showState ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>
@@ -1324,14 +1480,16 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.colorOptional}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: showColor ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: showColor
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
                   cursor: 'pointer',
-                  flexShrink: 0,
+                  position: 'relative',
                   transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
@@ -1348,17 +1506,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: showColor ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: showColor ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>
@@ -1405,14 +1564,16 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.sizeOptional}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: showSize ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: showSize
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
                   cursor: 'pointer',
-                  flexShrink: 0,
+                  position: 'relative',
                   transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
@@ -1429,17 +1590,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: showSize ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: showSize ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>
@@ -1483,14 +1645,16 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.opacityOptional}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: showOpacity ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: showOpacity
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
                   cursor: 'pointer',
-                  flexShrink: 0,
+                  position: 'relative',
                   transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
@@ -1507,17 +1671,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: showOpacity ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: showOpacity ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>
@@ -1562,16 +1727,18 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.youngPrefix}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: useYoungPrefix ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: useYoungPrefix
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
+                  opacity: selectionCount === 0 ? 0.5 : 1,
                   cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-                  flexShrink: 0,
-                  transition: 'background-color 0.2s ease',
-                  opacity: selectionCount === 0 ? 0.5 : 1
+                  position: 'relative',
+                  transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
                   if (selectionCount === 0) {
@@ -1582,17 +1749,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: useYoungPrefix ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: useYoungPrefix ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>
@@ -1602,16 +1770,18 @@ function Plugin() {
             <div class={styles['switch-container']}>
               <span class={styles['switch-label']}>{t.switches.darkModeSuffix}</span>
               <div
+                class="switch"
                 style={{
-                  width: '36px',
-                  height: '22px',
-                  backgroundColor: useDarkMode ? '#FF77E7' : 'rgba(27, 27, 27, 0.16)',
-                  borderRadius: '48px',
-                  position: 'relative',
+                  width: '38px',
+                  height: '24px',
+                  borderRadius: '24px',
+                  backgroundColor: useDarkMode
+                    ? 'var(--yds-bg-brand-default, #FF77E7)'
+                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
+                  opacity: selectionCount === 0 ? 0.5 : 1,
                   cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-                  flexShrink: 0,
-                  transition: 'background-color 0.2s ease',
-                  opacity: selectionCount === 0 ? 0.5 : 1
+                  position: 'relative',
+                  transition: 'background-color 0.2s ease'
                 }}
                 onClick={() => {
                   if (selectionCount === 0) {
@@ -1622,17 +1792,18 @@ function Plugin() {
                 }}
               >
                 <span
+                  class="switch-dot"
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    backgroundColor: '#FFFFFF',
+                    top: '3px',
+                    left: '3px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
-                    left: useDarkMode ? '17px' : '3px',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s ease',
+                    transform: useDarkMode ? 'translateX(14px)' : 'translateX(0)'
                   }}
                 />
               </div>

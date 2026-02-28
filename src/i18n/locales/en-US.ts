@@ -81,5 +81,12 @@ export const enUS: TranslationMessages = {
   language: {
     zhCN: '中文',
     enUS: 'English'
+  },
+
+  // 主题选择
+  theme: {
+    light: 'Light',
+    dark: 'Dark',
+    auto: 'Auto'
   }
 }

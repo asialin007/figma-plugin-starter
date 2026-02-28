@@ -81,5 +81,12 @@ export const zhCN: TranslationMessages = {
   language: {
     zhCN: '中文',
     enUS: 'English'
+  },
+
+  // 主题选择
+  theme: {
+    light: '浅色模式',
+    dark: '深色模式',
+    auto: '跟随系统'
   }
 }

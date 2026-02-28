@@ -91,4 +91,11 @@ export interface TranslationMessages {
     zhCN: string   // 中文
     enUS: string   // English
   }
+
+  // 主题选择
+  theme: {
+    light: string   // 浅色模式
+    dark: string    // 深色模式
+    auto: string    // 跟随系统
+  }
 }
