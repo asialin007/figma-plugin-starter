@@ -32,6 +32,9 @@
     "id": "batch-rename-layers",
     "name": "Batch Rename",
     "main": "src/main.ts",
-    "ui": "src/ui.tsx"
+    "ui": "src/ui.tsx",
+    "networkAccess": {
+      "allowedDomains": ["none"]
+    }
   }
 }
