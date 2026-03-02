@@ -13,6 +13,71 @@ import { Locale, getTranslation, LOCALE_CONFIGS, PLACEHOLDERS } from './i18n'
 // 主题类型
 type Theme = 'light' | 'dark' | 'auto'
 
+// ToggleSwitch 组件接口
+interface ToggleSwitchProps {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+  disabled?: boolean
+  onOpen?: () => void  // 开关打开时的回调（用于滚动到输入框）
+  onDisabledClick?: () => void  // 禁用时点击的回调
+}
+
+// ToggleSwitch 组件 - 通用的开关组件
+function ToggleSwitch({ checked, onChange, label, disabled = false, onOpen, onDisabledClick }: ToggleSwitchProps) {
+  const handleClick = useCallback(function () {
+    if (disabled) {
+      if (onDisabledClick) {
+        onDisabledClick()
+      }
+      return
+    }
+    const newValue = !checked
+    onChange(newValue)
+    if (newValue && onOpen) {
+      onOpen()
+    }
+  }, [checked, onChange, disabled, onOpen, onDisabledClick])
+
+  return (
+    <div class={styles['switch-container']}>
+      <span class={styles['switch-label']}>{label}</span>
+      <div
+        class="switch"
+        style={{
+          width: '38px',
+          height: '24px',
+          borderRadius: '24px',
+          backgroundColor: checked
+            ? 'var(--yds-bg-brand-default, #FF77E7)'
+            : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          position: 'relative',
+          transition: 'background-color 0.2s ease'
+        }}
+        onClick={handleClick}
+      >
+        <span
+          class="switch-dot"
+          style={{
+            position: 'absolute',
+            top: '3px',
+            left: '3px',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+            transition: 'transform 0.2s ease',
+            transform: checked ? 'translateX(14px)' : 'translateX(0)'
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function Plugin() {
   // 语言状态
   const [locale, setLocale] = useState<Locale>('zh-CN')
@@ -100,6 +165,8 @@ function Plugin() {
   const hasManuallyEditedNameRef = useRef(false)  // 使用 ref 避免闭包陷阱
   const hasAutoFilledRef = useRef(false)  // 使用 ref 避免闭包陷阱
   const userClearedInputRef = useRef(false)  // 追踪用户是否主动清空了输入框
+  const prevSelectedLayerNameRef = useRef<string | null>(null)  // 存储上一次的图层名称，用于检测图层变化
+  const prevRenameValueRef = useRef('')  // 存储上一次的 renameValue，用于检测变化
   const [isToastShowing, setIsToastShowing] = useState(false)
   const [isToastError, setIsToastError] = useState(false)  // 追踪 toast 是否为错误类型
   const [isSticky, setIsSticky] = useState(false)  // 追踪预览区域是否处于 sticky 状态
@@ -309,8 +376,11 @@ function Plugin() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.pluginMessage) {
-        const { type, selectedName, layerType, count, allSelectedNames } = event.data.pluginMessage
+        const { type, selectedName, layerType, count, allSelectedNames, successCount, failCount, errors } = event.data.pluginMessage
         if (type === 'SELECTION_INFO') {
+          // 使用 ref 检测图层是否变化（避免闭包陷阱）
+          const isLayerChanged = selectedName !== prevSelectedLayerNameRef.current
+
           setSelectedLayerName(selectedName)
           setLayerType(layerType)
           setSelectionCount(count)
@@ -318,6 +388,9 @@ function Plugin() {
           if (allSelectedNames) {
             setAllSelectedNames(allSelectedNames)
           }
+
+          // 更新 ref 以便下次比较
+          prevSelectedLayerNameRef.current = selectedName
 
           // 取消选中图层：清空输入框，恢复默认态
           if (count === 0) {
@@ -330,9 +403,6 @@ function Plugin() {
           }
           // 切图模式：单个图层时自动填充图层名称到输入框
           else if (currentMode === 'slice' && count === 1 && selectedName) {
-            // 检测是否选中了新的图层（图层名称发生变化）
-            const isLayerChanged = selectedName !== selectedLayerName
-
             if (isLayerChanged) {
               // 选中了新图层：重置所有标记并自动填充新名称
               setExportName(selectedName)
@@ -345,12 +415,21 @@ function Plugin() {
           }
           // 图层命名模式：自动填充原有名称到输入框
           else if (currentMode === 'layer' && selectedName) {
-            if (!hasManuallyEditedNameRef.current || renameValue === selectedLayerName) {
+            // 使用 ref 检测 renameValue 是否与上一次的图层名称相同
+            if (!hasManuallyEditedNameRef.current || prevRenameValueRef.current === prevSelectedLayerNameRef.current) {
               setRenameValue(selectedName)
+              prevRenameValueRef.current = selectedName
               hasAutoFilledRef.current = true
               hasManuallyEditedNameRef.current = true
               setHasManuallyEditedName(true)
             }
+          }
+        }
+
+        // 处理重命名完成消息，显示错误信息
+        if (type === 'RENAME_COMPLETE') {
+          if (errors && errors.length > 0) {
+            showToastMessage(errors[0], true)
           }
         }
       }
@@ -363,7 +442,7 @@ function Plugin() {
     return () => {
       window.removeEventListener('message', handleMessage)
     }
-  }, [currentMode])  // 只在模式切换时重新注册
+  }, [currentMode, showToastMessage])  // 只在模式切换时重新注册
 
   // 计算预览名称
   const previewName = useMemo(() => {
@@ -941,58 +1020,21 @@ function Plugin() {
         </div>
 
         {/* 前缀输入框 */}
-        <div class={styles['switch-container']}>
-          <span class={styles['switch-label']}>{t.labels.prefix}</span>
-          <div
-            class="switch"
-            style={{
-              width: '38px',
-              height: '24px',
-              borderRadius: '24px',
-              backgroundColor: showPrefix
-                ? 'var(--yds-bg-brand-default, #FF77E7)'
-                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-              opacity: selectionCount === 0 ? 0.5 : 1,
-              cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-              position: 'relative',
-              transition: 'background-color 0.2s ease'
-            }}
-            onClick={() => {
-              if (selectionCount === 0) {
-                showToastMessage(t.messages.selectLayersFirst, true)
-                return
+        <ToggleSwitch
+          checked={showPrefix}
+          onChange={setShowPrefix}
+          label={t.labels.prefix}
+          disabled={selectionCount === 0}
+          onDisabledClick={() => showToastMessage(t.messages.selectLayersFirst, true)}
+          onOpen={() => {
+            setTimeout(() => {
+              const prefixInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.prefix}"]`)
+              if (prefixInput) {
+                prefixInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
               }
-              const newValue = !showPrefix
-              setShowPrefix(newValue)
-              // 如果打开开关，延迟滚动到前缀输入框可见区域（包含快捷词）
-              if (newValue) {
-                setTimeout(() => {
-                  const prefixInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.prefix}"]`)
-                  if (prefixInput) {
-                    // 使用 center 确保输入框和下方的快捷词都可见
-                    prefixInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }
-                }, 100)
-              }
-            }}
-          >
-            <span
-              class="switch-dot"
-              style={{
-                position: 'absolute',
-                top: '3px',
-                left: '3px',
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                transition: 'transform 0.2s ease',
-                transform: showPrefix ? 'translateX(14px)' : 'translateX(0)'
-              }}
-            />
-          </div>
-        </div>
+            }, 100)
+          }}
+        />
 
         {showPrefix && (
           <div class={`${styles['form-group']} ${styles['form-group--after-switch']}`}>
@@ -1062,58 +1104,21 @@ function Plugin() {
         )}
 
         {/* 后缀输入框 */}
-        <div class={styles['switch-container']}>
-          <span class={styles['switch-label']}>{t.labels.suffix}</span>
-          <div
-            class="switch"
-            style={{
-              width: '38px',
-              height: '24px',
-              borderRadius: '24px',
-              backgroundColor: showSuffix
-                ? 'var(--yds-bg-brand-default, #FF77E7)'
-                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-              opacity: selectionCount === 0 ? 0.5 : 1,
-              cursor: selectionCount === 0 ? 'not-allowed' : 'pointer',
-              position: 'relative',
-              transition: 'background-color 0.2s ease'
-            }}
-            onClick={() => {
-              if (selectionCount === 0) {
-                showToastMessage(t.messages.selectLayersFirst, true)
-                return
+        <ToggleSwitch
+          checked={showSuffix}
+          onChange={setShowSuffix}
+          label={t.labels.suffix}
+          disabled={selectionCount === 0}
+          onDisabledClick={() => showToastMessage(t.messages.selectLayersFirst, true)}
+          onOpen={() => {
+            setTimeout(() => {
+              const suffixInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.suffix}"]`)
+              if (suffixInput) {
+                suffixInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
               }
-              const newValue = !showSuffix
-              setShowSuffix(newValue)
-              // 如果打开开关，延迟滚动到后缀输入框可见区域（包含快捷词）
-              if (newValue) {
-                setTimeout(() => {
-                  const suffixInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.suffix}"]`)
-                  if (suffixInput) {
-                    // 使用 center 确保输入框和下方的快捷词都可见
-                    suffixInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }
-                }, 100)
-              }
-            }}
-          >
-            <span
-              class="switch-dot"
-              style={{
-                position: 'absolute',
-                top: '3px',
-                left: '3px',
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                transition: 'transform 0.2s ease',
-                transform: showSuffix ? 'translateX(14px)' : 'translateX(0)'
-              }}
-            />
-          </div>
-        </div>
+            }, 100)
+          }}
+        />
 
         {showSuffix && (
           <Fragment>
@@ -1187,53 +1192,19 @@ function Plugin() {
         )}
 
         {/* 自动编号选项 */}
-        <div class={styles['switch-container']}>
-          <span class={styles['switch-label']}>{t.switches.addStartNumber}</span>
-          <div
-            class="switch"
-            style={{
-              width: '38px',
-              height: '24px',
-              borderRadius: '24px',
-              backgroundColor: addNumber
-                ? 'var(--yds-bg-brand-default, #FF77E7)'
-                : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'background-color 0.2s ease'
-            }}
-            onClick={() => {
-              const newValue = !addNumber
-              setAddNumber(newValue)
-              // 如果打开开关，延迟滚动到起始编号输入框可见区域
-              if (newValue) {
-                setTimeout(() => {
-                  const startNumberInput = scrollableRef.current?.querySelector('input[placeholder="1"]')
-                  if (startNumberInput) {
-                    // 使用 center 确保输入框在视口中可见
-                    startNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }
-                }, 100)
+        <ToggleSwitch
+          checked={addNumber}
+          onChange={setAddNumber}
+          label={t.switches.addStartNumber}
+          onOpen={() => {
+            setTimeout(() => {
+              const startNumberInput = scrollableRef.current?.querySelector('input[placeholder="1"]')
+              if (startNumberInput) {
+                startNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
               }
-            }}
-          >
-            <span
-              class="switch-dot"
-              style={{
-                position: 'absolute',
-                top: '3px',
-                left: '3px',
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                transition: 'transform 0.2s ease',
-                transform: addNumber ? 'translateX(14px)' : 'translateX(0)'
-              }}
-            />
-          </div>
-        </div>
+            }, 100)
+          }}
+        />
 
         {addNumber && (
           <Fragment>
@@ -1386,51 +1357,19 @@ function Plugin() {
             </div>
 
             {/* 6. 状态（选填）- 显示输入框 + 标签 */}
-            <div class={styles['switch-container']}>
-              <span class={styles['switch-label']}>{t.switches.stateOptional}</span>
-              <div
-                class="switch"
-                style={{
-                  width: '38px',
-                  height: '24px',
-                  borderRadius: '24px',
-                  backgroundColor: showState
-                    ? 'var(--yds-bg-brand-default, #FF77E7)'
-                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background-color 0.2s ease'
-                }}
-                onClick={() => {
-                  const newValue = !showState
-                  setShowState(newValue)
-                  if (newValue) {
-                    setTimeout(() => {
-                      const stateInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.state}"]`) as HTMLInputElement
-                      if (stateInput) {
-                        stateInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }
-                    }, 100)
+            <ToggleSwitch
+              checked={showState}
+              onChange={setShowState}
+              label={t.switches.stateOptional}
+              onOpen={() => {
+                setTimeout(() => {
+                  const stateInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.state}"]`) as HTMLInputElement
+                  if (stateInput) {
+                    stateInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
                   }
-                }}
-              >
-                <span
-                  class="switch-dot"
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: '3px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                    transition: 'transform 0.2s ease',
-                    transform: showState ? 'translateX(14px)' : 'translateX(0)'
-                  }}
-                />
-              </div>
-            </div>
+                }, 100)
+              }}
+            />
             {showState && (
               <div class={`${styles['form-group']} ${styles['form-group--after-switch--export']}`}>
                 <div class={styles['input-with-clear']}>
@@ -1477,51 +1416,19 @@ function Plugin() {
             )}
 
             {/* 7. 颜色（选填）- 显示输入框 + 标签 */}
-            <div class={styles['switch-container']}>
-              <span class={styles['switch-label']}>{t.switches.colorOptional}</span>
-              <div
-                class="switch"
-                style={{
-                  width: '38px',
-                  height: '24px',
-                  borderRadius: '24px',
-                  backgroundColor: showColor
-                    ? 'var(--yds-bg-brand-default, #FF77E7)'
-                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background-color 0.2s ease'
-                }}
-                onClick={() => {
-                  const newValue = !showColor
-                  setShowColor(newValue)
-                  if (newValue) {
-                    setTimeout(() => {
-                      const colorInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.color}"]`) as HTMLInputElement
-                      if (colorInput) {
-                        colorInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }
-                    }, 100)
+            <ToggleSwitch
+              checked={showColor}
+              onChange={setShowColor}
+              label={t.switches.colorOptional}
+              onOpen={() => {
+                setTimeout(() => {
+                  const colorInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.color}"]`) as HTMLInputElement
+                  if (colorInput) {
+                    colorInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
                   }
-                }}
-              >
-                <span
-                  class="switch-dot"
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: '3px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                    transition: 'transform 0.2s ease',
-                    transform: showColor ? 'translateX(14px)' : 'translateX(0)'
-                  }}
-                />
-              </div>
-            </div>
+                }, 100)
+              }}
+            />
             {showColor && (
               <div class={`${styles['form-group']} ${styles['form-group--after-switch--export']}`}>
                 <div class={styles['input-with-clear']}>
@@ -1561,51 +1468,19 @@ function Plugin() {
             )}
 
             {/* 8. 尺寸（选填）- 显示输入框 + 标签 */}
-            <div class={styles['switch-container']}>
-              <span class={styles['switch-label']}>{t.switches.sizeOptional}</span>
-              <div
-                class="switch"
-                style={{
-                  width: '38px',
-                  height: '24px',
-                  borderRadius: '24px',
-                  backgroundColor: showSize
-                    ? 'var(--yds-bg-brand-default, #FF77E7)'
-                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background-color 0.2s ease'
-                }}
-                onClick={() => {
-                  const newValue = !showSize
-                  setShowSize(newValue)
-                  if (newValue) {
-                    setTimeout(() => {
-                      const sizeInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.size}"]`) as HTMLInputElement
-                      if (sizeInput) {
-                        sizeInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }
-                    }, 100)
+            <ToggleSwitch
+              checked={showSize}
+              onChange={setShowSize}
+              label={t.switches.sizeOptional}
+              onOpen={() => {
+                setTimeout(() => {
+                  const sizeInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.size}"]`) as HTMLInputElement
+                  if (sizeInput) {
+                    sizeInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
                   }
-                }}
-              >
-                <span
-                  class="switch-dot"
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: '3px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                    transition: 'transform 0.2s ease',
-                    transform: showSize ? 'translateX(14px)' : 'translateX(0)'
-                  }}
-                />
-              </div>
-            </div>
+                }, 100)
+              }}
+            />
             {showSize && (
               <div class={`${styles['form-group']} ${styles['form-group--after-switch--export']}`}>
                 <div class={styles['input-with-clear']}>
@@ -1642,51 +1517,19 @@ function Plugin() {
             )}
 
             {/* 9. 透明度（选填）- 显示输入框 + 标签 */}
-            <div class={styles['switch-container']}>
-              <span class={styles['switch-label']}>{t.switches.opacityOptional}</span>
-              <div
-                class="switch"
-                style={{
-                  width: '38px',
-                  height: '24px',
-                  borderRadius: '24px',
-                  backgroundColor: showOpacity
-                    ? 'var(--yds-bg-brand-default, #FF77E7)'
-                    : 'var(--switch-bg-unchecked, rgba(27, 27, 27, 0.16))',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background-color 0.2s ease'
-                }}
-                onClick={() => {
-                  const newValue = !showOpacity
-                  setShowOpacity(newValue)
-                  if (newValue) {
-                    setTimeout(() => {
-                      const opacityInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.opacity}"]`) as HTMLInputElement
-                      if (opacityInput) {
-                        opacityInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }
-                    }, 100)
+            <ToggleSwitch
+              checked={showOpacity}
+              onChange={setShowOpacity}
+              label={t.switches.opacityOptional}
+              onOpen={() => {
+                setTimeout(() => {
+                  const opacityInput = scrollableRef.current?.querySelector(`input[placeholder="${t.labels.placeholder.opacity}"]`) as HTMLInputElement
+                  if (opacityInput) {
+                    opacityInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
                   }
-                }}
-              >
-                <span
-                  class="switch-dot"
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: '3px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                    transition: 'transform 0.2s ease',
-                    transform: showOpacity ? 'translateX(14px)' : 'translateX(0)'
-                  }}
-                />
-              </div>
-            </div>
+                }, 100)
+              }}
+            />
             {showOpacity && (
               <div class={`${styles['form-group']} ${styles['form-group--after-switch--export']}`}>
                 <div class={styles['input-with-clear']}>

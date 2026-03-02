@@ -100,7 +100,6 @@ export default function () {
 
     // 处理切图模式重命名请求
     if (message.type === 'APPLY_EXPORT_RENAME' && message.options && message.exportOptions) {
-      const { preserveOriginalName } = message.options
       const selection = figma.currentPage.selection
 
       if (selection.length === 0) {
@@ -186,12 +185,12 @@ export default function () {
         errors
       })
 
-      // 如果有失败，显示通知
+      // 显示结果通知
       if (failCount > 0) {
         figma.notify(`⚠️ 重命名完成：成功 ${successCount} 个，失败 ${failCount} 个`)
+      } else {
+        figma.notify(`✅ 已重命名 ${successCount} 个图层`)
       }
-
-      // UI 已显示 toast，此处不再重复显示
     }
   }
 
